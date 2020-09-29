@@ -17,9 +17,17 @@ import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import java.util.Random;
+
+/**
+ * Viet chuong trinh thuc hien cac nhiem vu
+ * 1. Tao mang a gom 100 phan tu tren thread main
+ * 2. Tao 2 thread chan, le dem so so chan va so so le
+ */
 public class MainActivity extends AppCompatActivity {
     Handler mHandler;
-    int a = 0;
+    int a[];
+    final int SIZE = 100;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -32,11 +40,11 @@ public class MainActivity extends AppCompatActivity {
             public void handleMessage(@NonNull Message msg) {
                 super.handleMessage(msg);
                 switch (msg.getData().getString("COMMAND")){
-                    case "MODULE_5":
-                        Log.d("Chia het cho 5", msg.getData().getInt("A") + "");
+                    case "THREAD_CHAN_FINISH":
+                        Log.d("So so chan", msg.getData().getInt("SO_SO_CHAN") + "");
                         break;
-                    case "MODULE_3":
-                        Log.d("Chia het cho 3", msg.getData().getInt("A") + "");
+                    case "THREAD_LE_FINISH":
+                        Log.d("So so le", msg.getData().getInt("SO_SO_LE") + "");
                         break;
                 }
             }
@@ -46,58 +54,69 @@ public class MainActivity extends AppCompatActivity {
         fab.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                tang();
+                arrayGeneration(SIZE);
             }
         });
     }
 
-    void tang(){
+    void arrayGeneration(int size){
+        a = new int[size];
+        Random random = new Random();
+        for(int i=0; i < size; i++){
+            a[i] = random.nextInt(100);
+        }
 
-        Thread t = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                for (int i=0; i < 10000; i++){
-                    a += 1;
-                    if(a % 5 == 0){
-                        Message msg = mHandler.obtainMessage();
-                        Bundle b = new Bundle();
-                        b.putString("COMMAND", "MODULE_5");
-                        b.putInt("A", a);
-                        msg.setData(b);
-
-                        mHandler.sendMessage(msg);
-                    }
-
-                    if(a % 3 == 0){
-                        Message msg = mHandler.obtainMessage();
-                        Bundle b = new Bundle();
-                        b.putString("COMMAND", "MODULE_3");
-                        b.putInt("A", a);
-                        msg.setData(b);
-
-                        mHandler.sendMessage(msg);
-                    }
-                }
-
-
-                giam(); //callback
-            }
-        });
-        t.start();
-        Log.d("","f");
+        threadChan();
+        threadLe();
     }
 
-    void giam(){
-        Thread t = new Thread(new Runnable() {
+    void threadChan(){
+        Thread thread = new Thread(){
             @Override
             public void run() {
-                for (int i=0; i < 10000; i++){
-                    a -= 1;
+                int count = 0;
+                for(int i=0;i < SIZE;i++){
+                    if(a[i] % 2 == 0){
+                        count++;
+                    }
                 }
-                Log.d("Gia tri a = ", String.valueOf(a));
+
+                //Send value to main thread
+                Message msg = mHandler.obtainMessage();
+                Bundle bundle = new Bundle();
+                bundle.putString("COMMAND", "THREAD_CHAN_FINISH");
+                bundle.putInt("SO_SO_CHAN", count);
+                msg.setData(bundle);
+                mHandler.sendMessage(msg);
             }
-        });
-        t.start();
+        };
+
+        thread.start();
+    }
+
+    void threadLe(){
+        Thread thread = new Thread(){
+            @Override
+            public void run() {
+                int count = 0;
+                for(int i=0;i < SIZE;i++){
+                    if(a[i] % 2 == 1){
+                        count++;
+                    }
+                }
+
+                //Send value to main thread
+                Message msg = mHandler.obtainMessage();
+                Bundle bundle = new Bundle();
+                bundle.putString("COMMAND", "THREAD_LE_FINISH");
+                bundle.putInt("SO_SO_LE", count);
+                msg.setData(bundle);
+
+                mHandler.sendMessage(msg);
+            }
+        };
+
+        thread.start();
     }
 
     @Override
